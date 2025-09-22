@@ -4,10 +4,11 @@
   Controller : Freenove ESP32-S3-WROOM lite (FNK0099)
  
   Description: - Controls two MG90S continuous rotation servos.
-               - Reads analog values from a KY-023 joystick module.
-               - Displays directional percentages on a 0.91 inch OLED display.
-               - Toggles the onboard LED with the joystick's button.
-               - Switches between manual and auto mode with button release.
+               - Reads analog directional values from a KY-023 joystick module.
+               - Displays directional percentages and distance measurements
+                 on a 0.91 inch OLED display.
+               - Joystick button turns on the on-board LED with button press
+                 and changes screens on button release.
 
   Notes : - Uses the Freenove Breakout Board for ESP32 (FNK0091).
           - Pan/Tilt platform used: https://www.aliexpress.com/item/1005008114555165.html
@@ -53,13 +54,13 @@ ServoControl servos(17, 18);          // Pan pin, Tilt pin
 
 // ENUMS
 enum DisplayMode {
-  DISPLAY_SERVO_INFO,
+  DISPLAY_JOYSTICK_INFO,
   DISPLAY_DISTANCE_INFO
 };
-DisplayMode currentDisplayMode = DISPLAY_SERVO_INFO;
+DisplayMode currentDisplayMode = DISPLAY_JOYSTICK_INFO;
 
 // GLOBAL VARIABLES
-bool lastButtonState = false;   // For detecting button state changes
+bool lastButtonState = false;
 
 
 // SETUP
@@ -105,10 +106,13 @@ void setup() {
 void loop() {
   static unsigned long previousMillis = 0;
   const unsigned long updateInterval = 20;  // 20ms
-  
+
   // Only execute the main code at the specified interval
   if (millis() - previousMillis >= updateInterval) {
     previousMillis = millis();
+
+    // Measure distance
+    long objectDistance = ultrasonic.measureDistanceCM();
     
     // Read and process the joystick values
     joystick.read();
@@ -119,10 +123,10 @@ void loop() {
     // If button was pressed and is now released, toggle display mode
     if (lastButtonState && !currentButtonState) {
       // Toggle display mode
-      currentDisplayMode = (currentDisplayMode == DISPLAY_SERVO_INFO) ? DISPLAY_DISTANCE_INFO : DISPLAY_SERVO_INFO;
+      currentDisplayMode = (currentDisplayMode == DISPLAY_JOYSTICK_INFO) ? DISPLAY_DISTANCE_INFO : DISPLAY_JOYSTICK_INFO;
       
       Serial.print("Display mode changed to: ");
-      Serial.println(currentDisplayMode == DISPLAY_SERVO_INFO ? "SERVO INFO" : "DISTANCE INFO");
+      Serial.println(currentDisplayMode == DISPLAY_JOYSTICK_INFO ? "SERVO INFO" : "DISTANCE INFO");
     }
     
     lastButtonState = currentButtonState;
@@ -137,12 +141,9 @@ void loop() {
       joystick.getLeft(),
       joystick.getRight()
     );
-
-    // Measure distance (needed for both display and serial output)
-    long objectDistance = ultrasonic.measureDistanceCM();
-
+    
     // Update display based on current mode
-    if (currentDisplayMode == DISPLAY_SERVO_INFO) {  // Show servo control information      
+    if (currentDisplayMode == DISPLAY_JOYSTICK_INFO) {  // Show servo control information      
       display.updateServoInfo(
         joystick.getUp(),
         joystick.getDown(), 
@@ -156,7 +157,7 @@ void loop() {
     }
 
     // Print to serial for debugging - include distance in both modes
-    const char* displayModeText = (currentDisplayMode == DISPLAY_SERVO_INFO) ? "Servo Info" : "Distance Info";
+    const char* displayModeText = (currentDisplayMode == DISPLAY_JOYSTICK_INFO) ? "Servo Info" : "Distance Info";
         
     Serial.printf(
       "Raw X: %d, Raw Y: %d | UP: %d%%, DOWN: %d%%, LEFT: %d%%, RIGHT: %d%% | Button: %s | Display Mode: %s | Distance: %ldcm\n", 
