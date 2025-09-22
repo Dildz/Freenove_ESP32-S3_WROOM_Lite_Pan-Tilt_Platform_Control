@@ -1,0 +1,10 @@
+{
+    "name": "Servo_Driver",
+    "version": "1.0.0",
+    "dependencies": [
+        {
+            "name": "<ESP32Servo.h>",
+            "version": "3.0.9"
+        }
+    ]
+}
